@@ -42,6 +42,7 @@
 
 #include <blaze/util/Exception.h>
 #include <blaze/util/Suffix.h>
+#include <atomic>
 
 
 namespace blaze {
@@ -89,16 +90,22 @@ class ParallelSection
    //**Member variables****************************************************************************
    /*!\name Member variables */
    //@{
-   static bool active_;  //!< Activity flag for the parallel section.
-                         /*!< In case a parallel section is active (i.e. the currently executed
-                              code is inside a parallel section), the flag is set to \a true,
-                              otherwise it is \a false. */
+   static std::atomic_int counts_;  //!< Counts for the active parallel section.
+                                    /*!< In case a parallel section is active (i.e. the currently
+                                         executed code is inside a parallel section), the counts is
+                                         increased, otherwise it is decreased. */
    //@}
    //**********************************************************************************************
 
    //**Friend declarations*************************************************************************
    /*! \cond BLAZE_INTERNAL */
    friend bool isParallelSectionActive();
+   /*! \endcond */
+   //**********************************************************************************************
+
+   //**Friend declarations*************************************************************************
+   /*! \cond BLAZE_INTERNAL */
+   friend bool isParallelSectionNested();
    /*! \endcond */
    //**********************************************************************************************
 };
@@ -116,7 +123,7 @@ class ParallelSection
 //*************************************************************************************************
 /*! \cond BLAZE_INTERNAL */
 template< typename T >
-bool ParallelSection<T>::active_ = false;
+std::atomic_int ParallelSection<T>::counts_(0);
 /*! \endcond */
 //*************************************************************************************************
 
@@ -138,11 +145,7 @@ bool ParallelSection<T>::active_ = false;
 template< typename T >
 inline ParallelSection<T>::ParallelSection( bool activate )
 {
-   if( active_ ) {
-      BLAZE_THROW_RUNTIME_ERROR( "Nested parallel sections detected" );
-   }
-
-   active_ = activate;
+  ++counts_;
 }
 //*************************************************************************************************
 
@@ -161,7 +164,7 @@ inline ParallelSection<T>::ParallelSection( bool activate )
 template< typename T >
 inline ParallelSection<T>::~ParallelSection()
 {
-   active_ = false;  // Resetting the activity flag
+  --counts_;
 }
 //*************************************************************************************************
 
@@ -183,7 +186,7 @@ inline ParallelSection<T>::~ParallelSection()
 template< typename T >
 inline ParallelSection<T>::operator bool() const
 {
-   return active_;
+   return counts_.load() > 0;
 }
 //*************************************************************************************************
 
@@ -212,7 +215,27 @@ inline bool isParallelSectionActive();
 */
 inline bool isParallelSectionActive()
 {
-   return ParallelSection<int>::active_;
+   return ParallelSection<int>::counts_.load() > 0;
+}
+//*************************************************************************************************
+
+//*************************************************************************************************
+/*!\name ParallelSection functions */
+//@{
+inline bool isParallelSectionNested();
+//@}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Returns whether a parallel section is nested or not.
+// \ingroup smp
+//
+// \return \a true if a parallel section is nested, \a false if not.
+*/
+inline bool isParallelSectionNested()
+{
+   return ParallelSection<int>::counts_.load() > 1;
 }
 //*************************************************************************************************
 

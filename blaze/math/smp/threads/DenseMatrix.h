@@ -403,7 +403,7 @@ inline typename EnableIf< And< IsDenseMatrix<MT1>
 
    BLAZE_PARALLEL_SECTION
    {
-      if( isSerialSectionActive() || !(~rhs).canSMPAssign() ) {
+      if( !isParallelSectionNested() || isSerialSectionActive() || !(~rhs).canSMPAssign() ) {
          assign( ~lhs, ~rhs );
       }
       else {
@@ -753,7 +753,7 @@ inline typename EnableIf< And< IsDenseMatrix<MT1>
 
    BLAZE_PARALLEL_SECTION
    {
-      if( isSerialSectionActive() || !(~rhs).canSMPAssign() ) {
+      if( !isParallelSectionNested() || isSerialSectionActive() || !(~rhs).canSMPAssign() ) {
          addAssign( ~lhs, ~rhs );
       }
       else {
@@ -1104,7 +1104,7 @@ inline typename EnableIf< And< IsDenseMatrix<MT1>
 
    BLAZE_PARALLEL_SECTION
    {
-      if( isSerialSectionActive() || !(~rhs).canSMPAssign() ) {
+      if( !isParallelSectionNested() || isSerialSectionActive() || !(~rhs).canSMPAssign() ) {
          subAssign( ~lhs, ~rhs );
       }
       else {
